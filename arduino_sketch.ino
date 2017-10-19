@@ -4,6 +4,7 @@
 #define DELAY_T 100
 
 char input[32];
+char input2[4];
 int flag=0;
 int index=0;
 
@@ -11,70 +12,50 @@ void setup() {
   // put your setup code here, to run once:
   Wire.begin();
   pinMode(13,OUTPUT);
-  Serial.begin(9600);
+  Serial.begin(153600);
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
   int inputchar=(char)Serial.read();
   if(inputchar!=-1){
-    switch(inputchar){
-      case 'a':
-        input[index]=(char)0;
-        index++;
-        break;
-      case 'b':
-        input[index]=(char)1;
-        index++;
-        break;
-      case 'c':
-        input[index]=(char)2;
-        index++;
-        break;
-      case 'd':
-        input[index]=(char)3;
-        index++;
-        break;
-      case 'e':
-        input[index]=(char)4;
-        index++;
-        break;
-      case 'f':
-        input[index]=(char)5;
-        index++;
-        break;
-      case 'g':
-        input[index]=(char)6;
-        index++;
-        break;
-      case 'h':
-        input[index]=(char)7;
-        index++;
-        break;
-      case 'i':
-        input[index]=(char)8;
-        index++;
-        break;
-      case 'j':
-        input[index]=(char)9;
-        index++;
-        break;
-      case 'A':
-        input[index]=(char)10;
-        index++;
-        break;
-      default:
-        input[index]=(char)0;
-        index++;
-        break;
-    }
-    if (index>=32){
-      index=0;
+    if (inputchar==100){
+      flag=1;
       Wire.beginTransmission(ADDR);
-      Wire.write(input,32);
-      Wire.endTransmission();
-
-      delay(10);
+      Wire.write(1);
+      Wire.endTransmission(); //full
+    }else if (inputchar==101){
+      flag=2;
+      Wire.beginTransmission(ADDR);
+      Wire.write(2);
+      Wire.endTransmission(); //delta
+    }else if (inputchar==99){
+      flag=0;
+      Wire.beginTransmission(ADDR);
+      for (int i=0; i<4; i++){
+        input2[i]=99;
+      }
+      Wire.write(input2,4);
+      Wire.endTransmission(); //stop
+    }else if(flag==1){
+      input[index]=inputchar-48;
+      index++;
+    }else if (flag==2){
+      input2[index]=inputchar-48;
+      index++;
     }
+  }
+  if (index>=32&&flag==1){
+    index=0;
+    Wire.beginTransmission(ADDR);
+    Wire.write(input,32);
+    Wire.endTransmission();
+    //delayMicroseconds(10);
+  }
+  if (flag==2&&index>=4){
+    index=0;
+    Wire.beginTransmission(ADDR);
+    Wire.write(input2,4);
+    Wire.endTransmission();
   }
 }

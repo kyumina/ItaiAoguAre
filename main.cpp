@@ -31,7 +31,9 @@ uint8_t count=0;
 static uint8_t line=0;
 static uint8_t PWM=0;
 
+char getmode;
 char msg[32];
+char msg2[4];
 
 void timerIsr()//10KHz
 {
@@ -72,26 +74,49 @@ int main() {
 
     int lines=0;
     int panel=0;
+    int flag=0;
 
     while(1){
         if (slave.receive()){
-            slave.read(msg,32);
-            if (panel==0){
-                for (int k=0; k<32; k++){
-                    F_BUF_R[lines][k]=msg[k];
+            if (flag==0){
+                getmode=slave.read();
+                if (getmode==1){
+                    flag=1;
+                }else if(getmode==2){
+                    flag=2;
                 }
-            }else if(panel==1){
-                for (int k=0; k<32; k++){
-                    F_BUF_G[lines][k]=msg[k];
+            }else if(flag==1){
+                slave.read(msg,32);
+
+                if (panel==0){
+                    for (int k=0; k<32; k++){
+                        F_BUF_R[lines][k]=msg[k];
+                    }
+                }else if(panel==1){
+                    for (int k=0; k<32; k++){
+                        F_BUF_G[lines][k]=msg[k];
+                    }
+                }else if(panel==2){
+                    for (int k=0; k<32; k++){
+                        F_BUF_B[lines][k]=msg[k];
+                    }
                 }
-            }else if(panel==2){
-                for (int k=0; k<32; k++){
-                    F_BUF_B[lines][k]=msg[k];
+                lines++;
+                if (lines>=32){lines=0;panel++;}
+                if (panel>=3){panel=0;flag=0;}
+
+            }else if(flag==2){
+                slave.read(msg2,4);
+                if (msg2[0]==0){
+                    F_BUF_R[msg2[2]][msg2[1]]=msg2[3];
+                }else if(msg2[0]==1){
+                    F_BUF_G[msg2[2]][msg2[1]]=msg2[3];
+                }else if(msg2[0]==2){
+                    F_BUF_B[msg2[2]][msg2[1]]=msg2[3];
+                }else if(msg2[0]==99){
+                    flag=0;
                 }
             }
-            lines++;
-            if (lines>=32){lines=0;panel++;}
-            if (panel>=3){panel=0;}
         }
         /*
         for (int i=0; i<32; i++){
@@ -103,6 +128,6 @@ int main() {
         }
         */
 
-        wait_us(100);
+        wait_us(10);
     }
 }
